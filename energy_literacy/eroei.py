@@ -1,12 +1,14 @@
-"""Visualise EROEI and net energy. See: http://euanmearns.com/eroei-for-beginners/"""
-import matplotlib
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-import matplotlib.ticker as mtick
-import copy
+"""
+Visualise EROEI and net energy. See: http://euanmearns.com/eroei-for-beginners/
+"""
 
-from energy_literacy import PLOT_DIR
+from pathlib import Path
+
+import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
+import numpy as np
+import pandas as pd
 
 
 def net_from_eroei(eroei: float) -> float:
@@ -27,15 +29,26 @@ def net_from_eroei(eroei: float) -> float:
     return (eroei - 1) / eroei
 
 
-def main():
+def energy_in(eroei):
+    return 100.0 / eroei
 
+
+def net(eroei):
+    return 100.0 - energy_in(eroei)
+
+
+def multiplier(Eref, E):
+    return Eref / E
+
+
+def main():
     eroeis = np.arange(30, 1, -0.01)
-    society = [net_from_eroei(eroei) for eroei in eroeis]
-    energy_system = [1 - x for x in society]
-    equivalent = [1 / s for s in society]
+    e_in = [energy_in(eroei) / 100.0 for eroei in eroeis]
+    e_net = [net(eroei) / 100.0 for eroei in eroeis]
+    m = [net(30) / net(eroei) for eroei in eroeis]
 
     df = pd.DataFrame(
-        data={"society": society, "system": energy_system, "equivalent": equivalent},
+        data={"system": e_in, "society": e_net, "multiplier": m},
         index=eroeis,
     )
 
@@ -49,7 +62,7 @@ def main():
 
     df["society"].plot(ax=ax1, label="Energy available to society", color="tab:green")
 
-    # Upper: Net energy
+    # Upper: Net energy ########################################################################################
 
     ax1.set_title("'Renewables' are forcing net energy off a cliff...", loc="left")
     ax1.set_ylabel("Available Energy / All Energy")
@@ -69,7 +82,7 @@ def main():
         arrowprops=dict(arrowstyle="-|>", color="black", lw=1, ls="--"),
     )
 
-    RENEWABLES_EROEI = 7
+    RENEWABLES_EROEI = 5
     ax1.annotate(
         "'renewables'",
         (RENEWABLES_EROEI, net_from_eroei(RENEWABLES_EROEI)),
@@ -82,7 +95,7 @@ def main():
 
     ax1.legend(loc="upper center")
 
-    # Lower: equivalent energy system
+    # Lower: equivalent energy system ######################################################################
 
     ax2.set_title(
         "'Renewables' require multiples of current generating capacity to maintain available energy...",
@@ -97,7 +110,7 @@ def main():
     ax2.add_patch(rect)
     ax2.set_ylim(0, 5)
 
-    df["equivalent"].plot(
+    df["multiplier"].plot(
         ax=ax2, label="Energy required to obtain energy", color="tab:blue",
     )
 
@@ -111,7 +124,7 @@ def main():
     )
 
     ax2.annotate(
-        "© Lyon Energy Futures Ltd. (2022)",
+        "© Lyon Energy Futures Ltd. (2024)",
         (0, 0),
         (20, 30),
         xycoords="figure points",
@@ -121,7 +134,7 @@ def main():
     )
 
     plt.gca().invert_xaxis()
-
+    PLOT_DIR = Path("/Users/richardlyon/Desktop")
     outfile = PLOT_DIR / f"renewables_forcing_energy_off_a_cliff.png"
     plt.savefig(outfile)
     print(f"\nSaved file to {outfile}")
